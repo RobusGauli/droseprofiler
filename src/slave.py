@@ -1,6 +1,7 @@
 import websockets
 import asyncio
 import argparse
+import platform
 
 import node
 
@@ -26,7 +27,7 @@ class Slave:
 
 
     def prepare_mode_headers(self):
-        return [('mode', 'slave'), ('id', self.slave_id)]
+        return [('mode', 'slave'), ('id', self.slave_id), ('cpu', platform.platform())]
     
     @classmethod
     def load_from_cli(cls):
