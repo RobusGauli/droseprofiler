@@ -1,5 +1,6 @@
 import websockets
 import asyncio
+import argparse
 
 
 class Slave:
@@ -8,15 +9,79 @@ class Slave:
         -> recv the command from client, connect directly to the client socket
         -> master acts as the bridge between the client and this node
     '''
-    MASTER_HOST = 'localhost'
-    MASTER_PORT = 5000
+    DEFAULT_MASTER_HOST = 'localhost'
+    DEFAULT_MASTER_PORT = 5000
+    MODE_HEADERS = [('mode', 'slave'), ('id', 'slave_one')]
+    
+    @classmethod
+    def from_cli(cls):
+        config = cls.load_from_cli()
+        self = cls(config=config)
+        return self
 
+       
+
+
+    def prepare_mode_headers(self):
+        return [('mode', 'slave'), ('id', self.slave_id)]
+    
+    @classmethod
+    def load_from_cli(cls):
+        config = {}
+        for key, val in vars(cls._get_args()).items():
+            if val:
+                key = 'MASTER_%s' % key.upper()
+                config[key] = val
+        return config
+
+    
+    @classmethod
+    def _get_args(cls):
+        parser = argparse.ArgumentParser(
+            description='Slave Node for server profiler'
+        )
+        parser.add_argument(
+            '-host',
+            action='store',
+            type=str,
+            default=None,
+            dest='host',
+            help='Host to regsiter to.'
+        )
+
+        parser.add_argument(
+            '-p', '--port',
+            action='store',
+            type=int,
+            default=None,
+            dest='port',
+            help='Master port number'
+        )
+        parser.add_argument(
+            '-id',
+            action='store',
+            type=str,
+            dest='id',
+            help='Unique slave id',
+            required=True
+        )
+        
+        return parser.parse_args()
+
+        
     def __init__(self, config=None):
         self.config = config
         self.ws = None
+        self.master_host = config.get('MASTER_HOST') or self.DEFAULT_MASTER_HOST
+        self.master_port = config.get('MASTER_PORT') or self.DEFAULT_MASTER_PORT
+        self.slave_id = config.get('MASTER_ID') or 'Unknown'
+        self.headers = self.prepare_mode_headers()
+    
+    
 
     async def run(self):
-        async with websockets.connect('ws://%s:%s/' % (self.MASTER_HOST, self.MASTER_PORT)) as ws:
+        async with websockets.connect('ws://%s:%s/' % (self.DEFAULT_MASTER_HOST, self.DEFAULT_MASTER_PORT),
+            extra_headers=self.headers) as ws:
             self.ws = ws
             await self._manage_client_session()
             while True:
@@ -31,17 +96,18 @@ class Slave:
         while True:
             received = await self.ws.recv()
             print(received)
+            await self.ws.send('hi from the ' + self.slave_id)
 
 
     async def _manage_client_production(self):
         while True:
-            await self.ws.send('hi from the client')
-            await asyncio.sleep(3)
+            
+            await asyncio.sleep(0)
         
     
 
 
 if __name__ == '__main__':
-    slave = Slave()
+    slave = Slave.from_cli()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(slave.run())
