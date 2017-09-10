@@ -69,6 +69,10 @@ class ClientCluster:
             try:
                 msg = await self.client_ws.recv()
                 request = json.loads(msg)
+                if not request.get('destination'):
+                    continue
+                if not self.slave_registry.get(request['destination']):
+                    continue
                 #get the desitnation slave socket
                 self.current_slave_ws = self.slave_registry[request['destination']]
                 #send the json patload to the current selected slave

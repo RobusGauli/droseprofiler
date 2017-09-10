@@ -2,6 +2,9 @@ import websockets
 import asyncio
 import argparse
 
+import node
+
+
 
 class Slave:
     '''This represents the slave node in the monitoring cluster
@@ -70,8 +73,10 @@ class Slave:
 
         
     def __init__(self, config=None):
+        self.node = node.Node()
         self.config = config
         self.ws = None
+        
         self.master_host = config.get('MASTER_HOST') or self.DEFAULT_MASTER_HOST
         self.master_port = config.get('MASTER_PORT') or self.DEFAULT_MASTER_PORT
         self.slave_id = config.get('MASTER_ID') or 'Unknown'
@@ -96,7 +101,7 @@ class Slave:
         while True:
             received = await self.ws.recv()
             print(received)
-            await self.ws.send('hi from the ' + self.slave_id)
+            await self.ws.send(self.slave_id + self.node.get_info())
 
 
     async def _manage_client_production(self):
