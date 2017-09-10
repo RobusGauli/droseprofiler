@@ -44,27 +44,6 @@ class Master:
             await asyncio.sleep(0)
             #it simply persist the connecrion and yield the control back to the event loop
 
-
-    async def manage_master_production(self, websocket):
-        while True:
-        #	msg = await websocket.recv()
-        #	print('got', msg)
-            try:
-                await websocket.send('hi there')
-                await asyncio.sleep(2)
-            except websockets.exceptions.ConnectionClosed:
-                print('connection closed by client')
-                break
-
-    async def manage_master_consumption(self, websocket):
-        while True:
-            try:
-                msg = await websocket.recv()
-                print('got the msg', msg)
-            except websockets.exceptions.ConnectionClosed:
-                print('Connection closed')
-                break
-    
     def run(self):
         _master_server = websockets.serve(
             self.handler,
