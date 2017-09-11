@@ -12,7 +12,7 @@ class Slave:
         -> recv the command from client, connect directly to the client socket
         -> master acts as the bridge between the client and this node
     '''
-    DEFAULT_MASTER_HOST = 'localhost'
+    DEFAULT_MASTER_HOST = '0.0.0.0'
     DEFAULT_MASTER_PORT = 5000
     MODE_HEADERS = [('mode', 'slave'), ('id', 'slave_one')]
     
@@ -85,7 +85,7 @@ class Slave:
     
 
     async def handler(self):
-        async with websockets.connect('ws://%s:%s/' % (self.DEFAULT_MASTER_HOST, self.DEFAULT_MASTER_PORT),
+        async with websockets.connect('ws://%s:%s/' % (self.master_host, self.master_port),
             extra_headers=self.headers) as ws:
             self.ws = ws
             await self._manage_client_session()

@@ -2,6 +2,7 @@ import collections
 import itertools
 import json
 import asyncio
+import argparse
 
 import websockets
 from sanic import Sanic
@@ -16,18 +17,74 @@ def get_header_val(headers):
     return dict(headers)
 
 class Master:
+    '''Master Node in the profiling cluster'''
 
     DEFAULT_MASTER_HOST = '0.0.0.0'
     DEFAULT_MASTER_PORT = 5000
     DEFAULT_HTTP_PORT = 8000
 
-    def __init__(self):
+    @classmethod
+    def from_cli(cls, config=None):
+        self = cls(config=config)
+        return self
+
+    def __init__(self, config=None):
         self.slave_registry = {}
+        self.config = config or self._load_config_from_cli()
+
+        
+        self.master_host = self.config['MASTER_HOST'] or self.DEFAULT_MASTER_HOST
+        self.master_port = self.config['MASTER_PORT'] or self.DEFAULT_MASTER_PORT
+        self.http_port = self.config['MASTER_HTTP_PORT'] or self.DEFAULT_HTTP_PORT
 
         self.http_server = Sanic(__name__)
         CORS(self.http_server)
         self.create_http_app()
+    
+    @classmethod
+    def _load_config_from_cli(cls):
+        config = {}
+        for key, val in vars(cls._from_args()).items():
+            key = 'MASTER_' + key.upper() 
+            config[key] = val
+        return config
+        
+    
+    @classmethod
+    def _from_args(cls):
 
+        parser = argparse.ArgumentParser(
+            description='Master Node for server profiler'
+        )
+        parser.add_argument(
+            '-host',
+            action='store',
+            type=str,
+            default=None,
+            dest='host',
+            help='Master Host address'
+        )
+
+        parser.add_argument(
+            '-p', '--port',
+            action='store',
+            type=int,
+            default=None,
+            dest='port',
+            help='Master port number'
+        )
+        parser.add_argument(
+            '-hp', '--httpport',
+            action='store',
+            type=int,
+            dest='http_port',
+            help='HTTP port number',
+            required=False
+        )
+        
+        return parser.parse_args()
+
+    
     def create_http_app(self):
         
         async def snapshot(_):
@@ -39,19 +96,21 @@ class Master:
     
     async def handler(self, websocket: websockets.WebSocketClientProtocol, _: str):
 
-        print('Got connection from the client', websocket)
-
+       
         #check to see if it is the slave or client
         mode = get_header_val(websocket.request_headers._headers)
+        
         _type_of_client = mode.get('mode')
         _id = mode.get('id')
         if _type_of_client == 'slave' and _id:
+            print('Got connection from the slave node', _id)
+
             #register as the slave server
             
             self.slave_registry[_id] = {}
             self.slave_registry[_id]['ws'] = websocket
             self.slave_registry[_id]['cpu'] = mode.get('cpu') 
-            print(self.slave_registry)
+            
             while True:
                 await asyncio.sleep(0)
         #since this is the client that i coming,
@@ -71,13 +130,13 @@ class Master:
     def run(self):
         _master_server = websockets.serve(
             self.handler,
-            'localhost',
-            5000
+            self.master_host,
+            self.master_port
         )
 
         sanic_server = self.http_server.create_server(
             '0.0.0.0',
-            port=8000
+            port=self.http_port
         )
         sanic_task = asyncio.ensure_future(sanic_server)
 
