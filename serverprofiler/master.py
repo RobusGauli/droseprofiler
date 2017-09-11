@@ -6,7 +6,7 @@ import asyncio
 import websockets
 from sanic import Sanic
 from sanic_cors import CORS
-from sanic.response import text, json as jsonify 
+from sanic.response import json as jsonify 
 
 
 
@@ -16,6 +16,10 @@ def get_header_val(headers):
     return dict(headers)
 
 class Master:
+
+    DEFAULT_MASTER_HOST = '0.0.0.0'
+    DEFAULT_MASTER_PORT = 5000
+    DEFAULT_HTTP_PORT = 8000
 
     def __init__(self):
         self.slave_registry = {}
@@ -27,7 +31,7 @@ class Master:
     def create_http_app(self):
         
         async def snapshot(_):
-            return jsonify({'nodes': [{'cpu': self.slave_registry[key]['cpu'], 'name': key} for key in self.slave_registry.keys() 
+            return jsonify({'nodes': [{'cpu': self.slave_registry[key]['cpu'], 'name': key} for key in self.slave_registry
                                         if self.slave_registry[key]['ws'].state == 1]})
 
         self.http_server.route('/nodes')(snapshot)
@@ -95,7 +99,11 @@ class ClientCluster:
         while True:
             try:
                 msg = await self.client_ws.recv()
-                request = json.loads(msg)
+                try:
+                    request = json.loads(msg)
+                except json.JSONDecodeError:
+                    print('failed to decode')
+                    continue
                 if not request.get('destination'):
                     continue
                 if not self.slave_registry.get(request['destination']):
@@ -111,9 +119,9 @@ class ClientCluster:
 
             except websockets.exceptions.ConnectionClosed:
                 print('Connection closed by the client')
-                print(request)
+                
                 self.slave_registry.pop(request['destination'])
-                print(self.slave_registry)
+                
                 break
 
     
