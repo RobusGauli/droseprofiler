@@ -179,7 +179,7 @@ class ClientCluster:
             except websockets.exceptions.ConnectionClosed:
                 print('Connection closed by the client')
                 
-                self.slave_registry.pop(request['destination'])
+                #self.slave_registry.pop(request['destination'])
                 
                 break
 
