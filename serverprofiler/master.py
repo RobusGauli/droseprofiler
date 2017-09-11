@@ -3,13 +3,14 @@ import itertools
 import json
 import asyncio
 import argparse
+import logging
 
 import websockets
 from sanic import Sanic
 from sanic_cors import CORS
 from sanic.response import json as jsonify 
 
-
+logging.getLogger('asyncio').setLevel(logging.DEBUG)
 
 
 def get_header_val(headers):
@@ -109,12 +110,14 @@ class Master:
             
             self.slave_registry[_id] = {}
             self.slave_registry[_id]['ws'] = websocket
-            self.slave_registry[_id]['cpu'] = mode.get('cpu') 
+            self.slave_registry[_id]['cpu'] = mode.get('cpu')
             
             while True:
-                await asyncio.sleep(0)
+                await websocket.send('hi there to the slave')
+                await asyncio.sleep(3)
         #since this is the client that i coming,
         #we create a new instance of the of the connection that involves three major parameter
+        print('got connection from fli')
         client_cluster = ClientCluster(
             client_ws=websocket, 
             slave_registry=self.slave_registry,
@@ -124,7 +127,8 @@ class Master:
         websocket.loop.create_task(client_cluster.manage_production())
         websocket.loop.create_task(client_cluster.manage_consumption())
         while True:
-            await asyncio.sleep(0)
+            #await websocket.send('hi therer')
+            await asyncio.sleep(3)
             #it simply persist the connecrion and yield the control back to the event loop
 
     def run(self):
@@ -141,6 +145,7 @@ class Master:
         sanic_task = asyncio.ensure_future(sanic_server)
 
         loop = asyncio.get_event_loop()
+        #loop.set_debug(True)
         loop.run_until_complete(asyncio.gather(_master_server, sanic_task))
         loop.run_forever()
 
@@ -157,6 +162,7 @@ class ClientCluster:
     async def manage_consumption(self):
         while True:
             try:
+                print('manager consumerionlooping')
                 msg = await self.client_ws.recv()
                 try:
                     request = json.loads(msg)
@@ -188,7 +194,8 @@ class ClientCluster:
         while True:
             try:
                 
-                await asyncio.sleep(2)
+                await self.client_ws.send('hi there')
+                await asyncio.sleep(3)
             except websockets.exceptions.ConnectionClosed:
                 print('Connection closed by the client')
                 break

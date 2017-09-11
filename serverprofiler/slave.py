@@ -88,9 +88,12 @@ class Slave:
         async with websockets.connect('ws://%s:%s/' % (self.master_host, self.master_port),
             extra_headers=self.headers) as ws:
             self.ws = ws
-            await self._manage_client_session()
+            #await self._manage_client_session()
             while True:
                 #just to keep the connection alive and yield the connection 
+                msg = await self.ws.recv()
+                print(msg)
+                await self.ws.send(self.node.get_info())
                 await asyncio.sleep(0)
     
     async def _manage_client_session(self):
@@ -99,9 +102,10 @@ class Slave:
 
     async def _manage_client_consumption(self):
         while True:
-            received = await self.ws.recv()
-            print(received)
-            await self.ws.send(self.slave_id + self.node.get_info())
+            #received = await self.ws.recv()
+            #print(received)
+            await asyncio.sleep(2)
+            #await self.ws.send(self.slave_id + self.node.get_info())
 
 
     async def _manage_client_production(self):

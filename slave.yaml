@@ -1,4 +1,4 @@
 slave:
-  masterhost: 0.0.0.0
+  masterhost: 10.20.30.155
   masterport: 4000
-  id: robus
+  id: rahul
