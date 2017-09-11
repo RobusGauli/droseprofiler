@@ -113,7 +113,8 @@ class Master:
             self.slave_registry[_id]['cpu'] = mode.get('cpu')
             
             while True:
-                await websocket.send('hi there to the slave')
+                #await websocket.send('hi there to the slave')
+                #await websocket.ping()
                 await asyncio.sleep(3)
         #since this is the client that i coming,
         #we create a new instance of the of the connection that involves three major parameter
@@ -126,10 +127,9 @@ class Master:
 
         websocket.loop.create_task(client_cluster.manage_production())
         websocket.loop.create_task(client_cluster.manage_consumption())
+        
         while True:
-            #await websocket.send('hi therer')
             await asyncio.sleep(3)
-            #it simply persist the connecrion and yield the control back to the event loop
 
     def run(self):
         _master_server = websockets.serve(
@@ -194,7 +194,7 @@ class ClientCluster:
         while True:
             try:
                 
-                await self.client_ws.send('hi there')
+                #await self.client_ws.send('hi there')
                 await asyncio.sleep(3)
             except websockets.exceptions.ConnectionClosed:
                 print('Connection closed by the client')

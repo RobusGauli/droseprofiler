@@ -87,37 +87,46 @@ class Slave:
     async def handler(self):
         async with websockets.connect('ws://%s:%s/' % (self.master_host, self.master_port),
             extra_headers=self.headers) as ws:
-            self.ws = ws
-            #await self._manage_client_session()
-            while True:
-                #just to keep the connection alive and yield the connection 
-                msg = await self.ws.recv()
-                print(msg)
-                await self.ws.send(self.node.get_info())
-                await asyncio.sleep(0)
+            
+            consumer_task = asyncio.ensure_future(self._manage_client_consumption(ws))
+            producer_task = asyncio.ensure_future(self._manage_client_production(ws))
+            done, pending = await asyncio.wait(
+                [consumer_task, producer_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in pending:
+                task.cancel()
     
-    async def _manage_client_session(self):
-        self.ws.loop.create_task(self._manage_client_consumption())
-        self.ws.loop.create_task(self._manage_client_production())
-
-    async def _manage_client_consumption(self):
+            # while True:
+            #     #just to keep the connection alive and yield the connection 
+            #     # msg = await self.ws.recv()
+            #     # #print(msg)
+            #     # await self.ws.send(self.node.get_info())
+            #     #await self.ws.ping()
+            #     await asyncio.sleep(0)
+    
+    
+        
+    async def _manage_client_consumption(self, ws):
         while True:
-            #received = await self.ws.recv()
-            #print(received)
-            await asyncio.sleep(2)
-            #await self.ws.send(self.slave_id + self.node.get_info())
+            received = await ws.recv()
+            print(received)
+            
+            await ws.send(self.slave_id + self.node.get_info())
 
 
-    async def _manage_client_production(self):
+    async def _manage_client_production(self, ws):
         while True:
             
-            await asyncio.sleep(0)
+            #making it to 0 will get the cpu consumption to 100%
+            await asyncio.sleep(2)
     
     
     def run(self):
         
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.handler())
+        
 
     
 
