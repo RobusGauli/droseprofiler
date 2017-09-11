@@ -1,0 +1,4 @@
+slave:
+  masterhost: 0.0.0.0
+  masterport: 4000
+  id: robus

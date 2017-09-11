@@ -18,8 +18,8 @@ class Slave:
     
     @classmethod
     def from_cli(cls):
-        config = cls.load_from_cli()
-        self = cls(config=config)
+        
+        self = cls(config=None)
         return self
 
        
@@ -33,7 +33,7 @@ class Slave:
         config = {}
         for key, val in vars(cls._get_args()).items():
             if val:
-                key = 'MASTER_%s' % key.upper()
+                key = 'MASTER_%s' % key.upper() if key != 'id' else 'SLAVE_%s' % key.upper()
                 config[key] = val
         return config
 
@@ -74,12 +74,12 @@ class Slave:
         
     def __init__(self, config=None):
         self.node = Node()
-        self.config = config
+        self.config = config or self.load_from_cli()
         self.ws = None
         
-        self.master_host = config.get('MASTER_HOST') or self.DEFAULT_MASTER_HOST
-        self.master_port = config.get('MASTER_PORT') or self.DEFAULT_MASTER_PORT
-        self.slave_id = config.get('MASTER_ID') or 'Unknown'
+        self.master_host = self.config.get('MASTER_HOST') or self.DEFAULT_MASTER_HOST
+        self.master_port = self.config.get('MASTER_PORT') or self.DEFAULT_MASTER_PORT
+        self.slave_id = self.config.get('SLAVE_ID') or 'Unknown'
         self.headers = self.prepare_mode_headers()
     
     
