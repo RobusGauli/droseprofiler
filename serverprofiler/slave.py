@@ -112,7 +112,7 @@ class Slave:
             received = await ws.recv()
             print(received)
             
-            await ws.send(self.slave_id + self.node.get_info())
+            await ws.send(self.node.get_info())
 
 
     async def _manage_client_production(self, ws):
