@@ -160,9 +160,11 @@ class ClientCluster:
         
     
     async def manage_consumption(self):
+        count = 0
         while True:
             try:
-                print('manager consumerionlooping')
+                count += 1
+                print('manager consumerionlooping', count)
                 msg = await self.client_ws.recv()
                 try:
                     request = json.loads(msg)
