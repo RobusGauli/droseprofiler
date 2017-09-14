@@ -75,7 +75,7 @@ class Slave:
 
         
     def __init__(self, config=None):
-        self.node = Node()
+        #self.node = Node()
         self.config = config or self.load_from_cli()
         #connection to the master node
         self.ws = None
@@ -149,6 +149,7 @@ class Slave:
 class ActionDispatcher:
 
     def __init__(self, master_ws):
+        self.node = Node()
         self.master_ws = master_ws
         self.register = {}
         self._initialize_routes_func()
@@ -164,7 +165,7 @@ class ActionDispatcher:
     def _initialize_routes_func(self):
         @self.route('/info')    
         async def get_cpu_info():
-            await self.master_ws.send('hi form the action manager')
+            await self.master_ws.send(self.node.get_info())
         
         
     
@@ -174,7 +175,7 @@ class ActionDispatcher:
         if _func:
             await _func()
 
-    
+
 if __name__ == '__main__':
     s = Slave.from_cli()
     s.run()

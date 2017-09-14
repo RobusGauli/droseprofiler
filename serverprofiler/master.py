@@ -8,7 +8,7 @@ import logging
 import websockets
 from sanic import Sanic
 from sanic_cors import CORS
-from sanic.response import json as jsonify 
+from sanic.response import json as jsonify, text
 
 logging.getLogger('asyncio').setLevel(logging.DEBUG)
 
@@ -88,11 +88,25 @@ class Master:
     
     def create_http_app(self):
         
+        
         async def snapshot(_):
             return jsonify({'nodes': [{'cpu': self.slave_registry[key]['cpu'], 'name': key} for key in self.slave_registry
                                         if self.slave_registry[key]['ws'].state == 1]})
-
         self.http_server.route('/nodes')(snapshot)
+        
+        async def get_info(_):
+            print(self.slave_registry)
+            current_slave_ws = self.slave_registry['robus']['ws']
+            #send the json patload to the current selected slave
+            await current_slave_ws.send('{"destination" : "robus", "route" : "/info"}')
+            #get the response from the slave
+            response_from_current_slave = await current_slave_ws.recv()
+            #send back the response to the client
+            
+            return text(response_from_current_slave)
+        self.http_server.route('/graph')(get_info)
+        
+        
 
     
     async def handler(self, websocket: websockets.WebSocketClientProtocol, _: str):
@@ -122,7 +136,6 @@ class Master:
         client_cluster = ClientCluster(
             client_ws=websocket, 
             slave_registry=self.slave_registry,
-        
         )
 
         websocket.loop.create_task(client_cluster.manage_production())
@@ -158,6 +171,7 @@ class ClientCluster:
         self.slave_registry = slave_registry
         self.current_slave_ws = None
         
+    
     
     async def manage_consumption(self):
         count = 0
