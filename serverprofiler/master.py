@@ -116,7 +116,7 @@ class Master:
             response_from_current_slave = await current_slave_ws.recv()
             return text(response_from_current_slave)
 
-        self.http_server.route('/nodes/<slave_name:[a-z]+>/<pid:int>')(get_pid_info)
+        self.http_server.route('/nodes/<slave_name:[a-zA-Z]+>/<pid:int>')(get_pid_info)
         
         
 
