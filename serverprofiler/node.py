@@ -83,7 +83,26 @@ class Node(object):
                 'platform': self.platform_name,
                 'p_cores': self.p_num_cores,
                 'l_cors': self.l_num_cores
-            } 
+            },
+            'status': 'success' 
         })
     
+    def get_process_info(self, pid):
+        
+        try:
+            process = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            return json.dumps({
+                'id': self.name,
+                'payload': None,
+                'status': 'fail',
+                'errormessage': 'Process does not eixsts.'
+            })
+        else:
+            return json.dumps({
+                'id': self.name,
+                'payload': process.as_dict(),
+                'status': 'success'
+            })
+        
 

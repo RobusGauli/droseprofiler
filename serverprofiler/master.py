@@ -94,17 +94,29 @@ class Master:
                                         if self.slave_registry[key]['ws'].state == 1]})
         self.http_server.route('/nodes')(snapshot)
         
-        async def get_info(_):
-            print(self.slave_registry)
-            current_slave_ws = self.slave_registry['robus']['ws']
+        async def get_info(_, name):
+            if name not in self.slave_registry:
+                return jsonify({'status': 'fail', 'message': 'Node not found'})
+            current_slave_ws = self.slave_registry[name]['ws']
             #send the json patload to the current selected slave
-            await current_slave_ws.send('{"destination" : "robus", "route" : "/info"}')
+            await current_slave_ws.send('{"route" : "/info"}')
             #get the response from the slave
             response_from_current_slave = await current_slave_ws.recv()
             #send back the response to the client
             
             return text(response_from_current_slave)
-        self.http_server.route('/graph')(get_info)
+        self.http_server.route('/nodes/<name:[a-z]+>')(get_info)
+
+        async def get_pid_info(_, slave_name, pid):
+            
+            if slave_name not in self.slave_registry:
+                return jsonify({'status': 'fail', 'message': 'Node not found'})
+            current_slave_ws = self.slave_registry[slave_name]['ws']
+            await current_slave_ws.send('{"route": "/processinfo", "pid" : "%s"}' % pid)
+            response_from_current_slave = await current_slave_ws.recv()
+            return text(response_from_current_slave)
+
+        self.http_server.route('/nodes/<slave_name:[a-z]+>/<pid:int>')(get_pid_info)
         
         
 

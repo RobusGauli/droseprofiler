@@ -122,12 +122,17 @@ class Slave:
             received = await ws.recv()
             try:
                 r = json.loads(received)
+                
                 if r['route'] not in self.action_dispatcher.register:
                     await ws.send('{"status" : "fail"}')
                     continue
             except json.JSONDecodeError:
+                await ws.send('{"status" : "fail"}')
                 continue
-            await self.action_dispatcher.dispatch(r['route'])
+            except KeyError:
+                await ws.send('{"status" : "fail"}')
+                continue
+            await self.action_dispatcher.dispatch(r['route'], payload=r)
             
 
     async def _manage_client_production(self, ws):
@@ -163,17 +168,30 @@ class ActionDispatcher:
 
     
     def _initialize_routes_func(self):
+        
+        
         @self.route('/info')    
-        async def get_cpu_info():
+        async def get_cpu_info(payload):
             await self.master_ws.send(self.node.get_info())
+
+
+        
+        @self.route('/processinfo')
+        async def get_process_info(payload):
+            pid = payload.get('pid')
+            if not pid:
+                await self.master_ws.send('{"status" : "fail"}')
+            #if i have the process Id
+            else:
+                await self.master_ws.send(self.node.get_process_info(int(pid)))
         
         
     
-    async def dispatch(self, route):
+    async def dispatch(self, route, payload=None):
         #given the dispatch command i shoulde be abpe to perform the action
         _func = self.register.get(route)
         if _func:
-            await _func()
+            await _func(payload)
 
 
 if __name__ == '__main__':
