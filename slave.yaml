@@ -1,4 +1,4 @@
 slave:
-  masterhost: 10.20.30.155
+  masterhost: 0.0.0.0
   masterport: 4000
-  id: rahul
+  id: Drose
