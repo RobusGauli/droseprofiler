@@ -122,12 +122,13 @@ class Slave:
             received = await ws.recv()
             try:
                 r = json.loads(received)
+                if r['route'] not in self.action_dispatcher.register:
+                    await ws.send('{"status" : "fail"}')
+                    continue
             except json.JSONDecodeError:
                 continue
             await self.action_dispatcher.dispatch(r['route'])
-            # if route:
-            #     print(self.register[route])
-            #     await self.register[route](ws)
+            
 
     async def _manage_client_production(self, ws):
         while True:
@@ -135,23 +136,7 @@ class Slave:
             #making it to 0 will get the cpu consumption to 100%
             await asyncio.sleep(2)
     
-    # def action_manager(self):
-
-    #     @self.route('/info')
-    #     async def get_info(ws):
-    #         await ws.send('ho from theinner function')
-        
-        
-        
     
-
-    # def route(self, route):
-        
-    #     def wrapper(func):
-    #         self.register[route] = func   
-    #     return wrapper         
-
-
     def run(self):
         
         loop = asyncio.get_event_loop()
@@ -188,6 +173,8 @@ class ActionDispatcher:
         _func = self.register.get(route)
         if _func:
             await _func()
+
+    
 if __name__ == '__main__':
     s = Slave.from_cli()
     s.run()
