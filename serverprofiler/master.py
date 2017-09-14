@@ -105,7 +105,7 @@ class Master:
             #send back the response to the client
             
             return text(response_from_current_slave)
-        self.http_server.route('/nodes/<name:[a-z]+>')(get_info)
+        self.http_server.route('/nodes/<name:[a-zA-Z]+>')(get_info)
 
         async def get_pid_info(_, slave_name, pid):
             
